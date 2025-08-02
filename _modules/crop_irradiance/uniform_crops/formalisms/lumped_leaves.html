@@ -1,0 +1,270 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>crop_irradiance.uniform_crops.formalisms.lumped_leaves &mdash; crop_irradiance 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            crop_irradiance
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">What is crop_irradiance ?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uniform_crops.html">Uniform crops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../references.html">References</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">crop_irradiance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">crop_irradiance</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">crop_irradiance.uniform_crops.formalisms.lumped_leaves</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for crop_irradiance.uniform_crops.formalisms.lumped_leaves</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">exp</span>
+
+
+<div class="viewcode-block" id="calc_beer_absorption">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.lumped_leaves.calc_beer_absorption">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_beer_absorption</span><span class="p">(</span>
+    <span class="n">incident_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates irradiance absorption by a uniform leaf layer following Beer-Lambert&#39;s law.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_irradiance: [W m-2ground] incident irradiance at the upper side of the leaf layer</span>
+<span class="sd">        extinction_coefficient: [m2groud m-2leaf] extinction coefficient of the incident irradiance through the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] absorbed irradiance per unit ground area</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">        The unit of the incident irradiance given above may be set differently by the user (e.g. J cm-2ground), in</span>
+<span class="sd">            which case the absorbed irradiance will have the same unit (e.g. J cm-2ground)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">scaling_factor</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span>
+    <span class="p">)</span> <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">extinction_coefficient</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">incident_irradiance</span> <span class="o">*</span> <span class="n">scaling_factor</span></div>
+
+
+
+<div class="viewcode-block" id="calc_de_pury_absorption">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.lumped_leaves.calc_de_pury_absorption">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_de_pury_absorption</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">incident_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">diffuse_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed direct and diffuse irradiance by a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        incident_diffuse_irradiance: [W m-2ground] incident diffuse irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        direct_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">        diffuse_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of diffuse irradiance</span>
+<span class="sd">        canopy_reflectance_to_direct_irradiance: [-] canopy reflectance to direct (beam) irradiance</span>
+<span class="sd">        canopy_reflectance_to_diffuse_irradiance: [-] canopy reflectance to diffuse irradiance for the given irradiance</span>
+<span class="sd">            band</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground]: the absorbed direct and diffuse irradiance by a leaf layer per unit ground area</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">absorbed_direct_irradiance</span> <span class="o">=</span> <span class="n">calc_absorbed_direct_irradiance</span><span class="p">(</span>
+        <span class="n">incident_direct_irradiance</span><span class="p">,</span>
+        <span class="n">upper_cumulative_leaf_area_index</span><span class="p">,</span>
+        <span class="n">leaf_layer_thickness</span><span class="p">,</span>
+        <span class="n">direct_extinction_coefficient</span><span class="p">,</span>
+        <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">absorbed_diffuse_irradiance</span> <span class="o">=</span> <span class="n">calc_absorbed_diffuse_irradiance</span><span class="p">(</span>
+        <span class="n">incident_diffuse_irradiance</span><span class="p">,</span>
+        <span class="n">upper_cumulative_leaf_area_index</span><span class="p">,</span>
+        <span class="n">leaf_layer_thickness</span><span class="p">,</span>
+        <span class="n">diffuse_extinction_coefficient</span><span class="p">,</span>
+        <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">absorbed_direct_irradiance</span> <span class="o">+</span> <span class="n">absorbed_diffuse_irradiance</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_direct_irradiance">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.lumped_leaves.calc_absorbed_direct_irradiance">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_direct_irradiance</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed direct irradiance by a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        direct_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">        canopy_reflectance_to_direct_irradiance: [-] canopy reflectance to direct (beam) irradiance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed direct irradiance by a leaf layer per unit ground area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">scaling_factor</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">direct_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span>
+    <span class="p">)</span> <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">direct_extinction_coefficient</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">incident_direct_irradiance</span>
+        <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">scaling_factor</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_diffuse_irradiance">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.lumped_leaves.calc_absorbed_diffuse_irradiance">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_diffuse_irradiance</span><span class="p">(</span>
+    <span class="n">incident_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">diffuse_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed diffuse irradiance by a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_diffuse_irradiance: [W m-2ground] incident diffuse irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        diffuse_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of diffuse irradiance</span>
+<span class="sd">        canopy_reflectance_to_diffuse_irradiance: [-] canopy reflectance to diffuse irradiance for the given irradiance</span>
+<span class="sd">            band</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed diffuse irradiance by a leaf layer per unit ground area</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">scaling_factor</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">diffuse_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span>
+    <span class="p">)</span> <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">diffuse_extinction_coefficient</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">incident_diffuse_irradiance</span>
+        <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">scaling_factor</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Rami Albasha.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

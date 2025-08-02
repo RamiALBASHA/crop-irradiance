@@ -1,0 +1,956 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves &mdash; crop_irradiance 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            crop_irradiance
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview.html">What is crop_irradiance ?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../uniform_crops.html">Uniform crops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../references.html">References</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">crop_irradiance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">crop_irradiance</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">exp</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">sin</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">tan</span>
+
+<span class="kn">from</span> <span class="nn">crop_irradiance.uniform_crops.formalisms.config</span> <span class="kn">import</span> <span class="n">PRECISION</span>
+
+
+<div class="viewcode-block" id="calc_leaf_scattering_coefficient">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_leaf_scattering_coefficient">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_leaf_scattering_coefficient</span><span class="p">(</span>
+    <span class="n">leaf_reflectance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">leaf_transmittance</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates leaf scattering coefficient.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        leaf_reflectance: [-] leaf reflectance coefficient for a given irradiance band</span>
+<span class="sd">        leaf_transmittance: [-] leaf transmittance coefficient for a given irradiance band</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [-] leaf scattering coefficient</span>
+
+<span class="sd">    References:</span>
+<span class="sd">        Goudriaan J. (1977).</span>
+<span class="sd">            Crop Micrometeorology: A Simulation Study.</span>
+<span class="sd">            Simulation monographs, Pudoc, Wageningen, 257 pp.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">leaf_reflectance</span> <span class="o">+</span> <span class="n">leaf_transmittance</span></div>
+
+
+
+<div class="viewcode-block" id="calc_direct_black_extinction_coefficient">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_direct_black_extinction_coefficient">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_direct_black_extinction_coefficient</span><span class="p">(</span>
+    <span class="n">solar_inclination</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_angle_distribution_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">clumping_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the extinction coefficient of direct (beam) irradiance through a canopy of black leaves.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        solar_inclination: [rad] angle of solar inclination</span>
+<span class="sd">        leaf_angle_distribution_factor: [-] factor describing leaf angle distribution (for spherical distributions its</span>
+<span class="sd">            value equals rad(56) = 0.9773843811168246)</span>
+<span class="sd">        clumping_factor: [-] clumping factor to describe the spatial dependency of the positions of the leaves</span>
+<span class="sd">            (Weiss et al. 2004)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance through a canopy of black leaves</span>
+
+<span class="sd">    References:</span>
+<span class="sd">        Goudriaan J. (1977).</span>
+<span class="sd">            Crop Micrometeorology: A Simulation Study.</span>
+<span class="sd">            Simulation monographs, Pudoc, Wageningen, 257 pp.</span>
+<span class="sd">        Weiss M., Baret F., Smith G. J., Jonckheere I., Coppin P., 2004.</span>
+<span class="sd">            Review of methods for in situ leaf area index (LAI) determination.</span>
+<span class="sd">            Agricultural Forest Meteorology 121, 37 - 53</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">solar_inclination</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">PRECISION</span><span class="p">,</span> <span class="n">solar_inclination</span><span class="p">)</span>
+    <span class="n">projection_ratio</span> <span class="o">=</span> <span class="p">(</span><span class="n">leaf_angle_distribution_factor</span> <span class="o">/</span> <span class="mf">9.65</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.6061</span> <span class="o">-</span> <span class="mf">3.0</span>
+    <span class="n">numerator</span> <span class="o">=</span> <span class="p">(</span><span class="n">projection_ratio</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">tan</span><span class="p">(</span><span class="n">solar_inclination</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span>
+    <span class="n">denominator</span> <span class="o">=</span> <span class="n">projection_ratio</span> <span class="o">+</span> <span class="mf">1.774</span> <span class="o">*</span> <span class="p">(</span><span class="n">projection_ratio</span> <span class="o">+</span> <span class="mf">1.182</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.733</span>
+    <span class="k">return</span> <span class="n">clumping_factor</span> <span class="o">*</span> <span class="n">numerator</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">PRECISION</span><span class="p">,</span> <span class="n">denominator</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_direct_extinction_coefficient">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_direct_extinction_coefficient">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_direct_extinction_coefficient</span><span class="p">(</span>
+    <span class="n">solar_inclination</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_angle_distribution_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">clumping_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the extinction coefficient of direct (beam) irradiance through a canopy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        solar_inclination: [rad] angle of solar inclination</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+<span class="sd">        leaf_angle_distribution_factor: [-] factor describing leaf angle distribution (for spherical distributions its</span>
+<span class="sd">            value equals rad(56) = 0.9773843811168246)</span>
+<span class="sd">        clumping_factor: [-] clumping factor to describe the spatial dependency of the positions of the leaves</span>
+<span class="sd">            (Weiss et al. 2004)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance through the canopy</span>
+
+<span class="sd">    References:</span>
+<span class="sd">        Goudriaan J. (1977).</span>
+<span class="sd">            Crop Micrometeorology: A Simulation Study.</span>
+<span class="sd">            Simulation monographs, Pudoc, Wageningen, 257 pp.</span>
+<span class="sd">        Weiss M., Baret F., Smith G. J., Jonckheere I., Coppin P., 2004.</span>
+<span class="sd">            Review of methods for in situ leaf area index (LAI) determination.</span>
+<span class="sd">            Agricultural Forest Meteorology 121, 37 - 53</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">direct_black_extinction_coefficient</span> <span class="o">=</span> <span class="n">calc_direct_black_extinction_coefficient</span><span class="p">(</span>
+        <span class="n">solar_inclination</span><span class="o">=</span><span class="n">solar_inclination</span><span class="p">,</span>
+        <span class="n">leaf_angle_distribution_factor</span><span class="o">=</span><span class="n">leaf_angle_distribution_factor</span><span class="p">,</span>
+        <span class="n">clumping_factor</span><span class="o">=</span><span class="n">clumping_factor</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">direct_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">leaf_scattering_coefficient</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_sky_sectors_weight">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_sky_sectors_weight">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_sky_sectors_weight</span><span class="p">(</span><span class="n">sky_sectors_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sky_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the contributions from sky sectors (rings) to diffuse irradiance.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sky_sectors_number: [-] number of sky sectors to be used</span>
+<span class="sd">        sky_type: one of &#39;soc&#39; or &#39;uoc&#39; (Sky OverCast and Uniform OverCast, respectively)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [-] the contributions from sky sectors (rings) to diffuse irradiance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sky_weights</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">sky_type</span> <span class="o">==</span> <span class="s2">&quot;uoc&quot;</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">sky_sectors_number</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">sky_weights</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">sky_type</span> <span class="o">==</span> <span class="s2">&quot;soc&quot;</span><span class="p">:</span>
+        <span class="n">sky_weights</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">angle_increment</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">sky_sectors_number</span> <span class="o">/</span> <span class="mf">2.0</span>
+        <span class="p">)</span>  <span class="c1"># half increment in sky ring declination angle</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sky_sectors_number</span><span class="p">):</span>
+            <span class="n">lower_angle</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">angle_increment</span>
+            <span class="n">upper_angle</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">angle_increment</span>
+            <span class="c1"># Weight factor for each sky ring, the value 7.0/6.0 results from integrating</span>
+            <span class="c1"># weights over the sky hemisphere, thus used for normalization.</span>
+            <span class="n">weight</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">sin</span><span class="p">(</span><span class="n">upper_angle</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="mf">3.0</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">upper_angle</span><span class="p">))</span>
+                <span class="o">-</span> <span class="n">sin</span><span class="p">(</span><span class="n">lower_angle</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mf">0.5</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="mf">3.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">sin</span><span class="p">(</span><span class="n">lower_angle</span><span class="p">)))</span>
+            <span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">7.0</span> <span class="o">/</span> <span class="mf">6.0</span><span class="p">)</span>
+            <span class="n">sky_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">sky_weights</span></div>
+
+
+
+<div class="viewcode-block" id="calc_diffuse_extinction_coefficient">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_diffuse_extinction_coefficient">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_diffuse_extinction_coefficient</span><span class="p">(</span>
+    <span class="n">leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_angle_distribution_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">clumping_factor</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">sky_sectors_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="n">sky_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;soc&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the diffuse extinction coefficients for canopies with non-black and black leaves.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        leaf_area_index: [m2leaf m-2ground] leaf area index of the whole canopy</span>
+<span class="sd">        leaf_angle_distribution_factor: [-] factor describing leaf angle distribution (for spherical distributions its</span>
+<span class="sd">            value equals rad(56) = 0.9773843811168246)</span>
+<span class="sd">        clumping_factor: [-] clumping factor to describe the spatial dependency of the positions of the leaves</span>
+<span class="sd">            (Weiss et al. 2004)</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+<span class="sd">        sky_sectors_number: [-] number of sky sectors to be used</span>
+<span class="sd">        sky_type: one of &#39;soc&#39; or &#39;uoc&#39; (Sky OverCast and Uniform OverCast, respectively)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [m2ground m-2leaf] the extinction coefficient of diffuse irradiance through a canopy of non-black leaves</span>
+<span class="sd">        [m2ground m-2leaf] the extinction coefficient of diffuse irradiance through a canopy of black leaves</span>
+
+<span class="sd">    References:</span>
+<span class="sd">        Goudriaan J. (1988)</span>
+<span class="sd">            The bare bones of leaf-angle distribution in radiation models for canopy photosynthesis and energy exchange.</span>
+<span class="sd">            Agricultural and Forest Meteorology 43, 155 - 169.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">leaf_area_index</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">PRECISION</span><span class="p">,</span> <span class="n">leaf_area_index</span><span class="p">)</span>
+    <span class="n">sky_weights</span> <span class="o">=</span> <span class="n">calc_sky_sectors_weight</span><span class="p">(</span><span class="n">sky_sectors_number</span><span class="p">,</span> <span class="n">sky_type</span><span class="p">)</span>
+
+    <span class="n">angle_increment</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">pi</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">sky_sectors_number</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="p">)</span>  <span class="c1"># half increment in sky ring declination angle</span>
+
+    <span class="n">diffuse_extinction_coefficient</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">diffuse_black_extinction_coefficient</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sky_sectors_number</span><span class="p">):</span>
+        <span class="n">sector_angle</span> <span class="o">=</span> <span class="n">angle_increment</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span>
+        <span class="n">direct_extinction_coefficient</span> <span class="o">=</span> <span class="n">calc_direct_extinction_coefficient</span><span class="p">(</span>
+            <span class="n">solar_inclination</span><span class="o">=</span><span class="n">sector_angle</span><span class="p">,</span>
+            <span class="n">leaf_scattering_coefficient</span><span class="o">=</span><span class="n">leaf_scattering_coefficient</span><span class="p">,</span>
+            <span class="n">leaf_angle_distribution_factor</span><span class="o">=</span><span class="n">leaf_angle_distribution_factor</span><span class="p">,</span>
+            <span class="n">clumping_factor</span><span class="o">=</span><span class="n">clumping_factor</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">diffuse_extinction_coefficient</span> <span class="o">+=</span> <span class="n">sky_weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">direct_extinction_coefficient</span> <span class="o">*</span> <span class="n">leaf_area_index</span>
+        <span class="p">)</span>
+
+        <span class="n">diffuse_black_extinction_coefficient</span> <span class="o">+=</span> <span class="n">sky_weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">/</span> <span class="n">sin</span><span class="p">(</span><span class="n">sector_angle</span><span class="p">))</span> <span class="o">*</span> <span class="n">leaf_area_index</span>
+        <span class="p">)</span>
+
+    <span class="n">diffuse_extinction_coefficient</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">leaf_area_index</span> <span class="o">*</span> <span class="n">log</span><span class="p">(</span><span class="n">diffuse_extinction_coefficient</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">diffuse_black_extinction_coefficient</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">leaf_area_index</span> <span class="o">*</span> <span class="n">log</span><span class="p">(</span><span class="n">diffuse_black_extinction_coefficient</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">diffuse_extinction_coefficient</span><span class="p">,</span> <span class="n">diffuse_black_extinction_coefficient</span></div>
+
+
+
+<div class="viewcode-block" id="calc_canopy_reflectance_to_direct_irradiance">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_canopy_reflectance_to_direct_irradiance">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_canopy_reflectance_to_direct_irradiance</span><span class="p">(</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates canopy reflectance to direct (beam) irradiance.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">            through a canopy of black leaves</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [-] canopy reflectance to direct (beam) irradiance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">reflectance_of_horizontal_leaves</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">leaf_scattering_coefficient</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span>
+        <span class="mf">1.0</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">leaf_scattering_coefficient</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">reflectance_of_horizontal_leaves</span> <span class="o">*</span> <span class="n">direct_black_extinction_coefficient</span><span class="p">)</span>
+        <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">direct_black_extinction_coefficient</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_sunlit_fraction">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_sunlit_fraction">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_sunlit_fraction</span><span class="p">(</span>
+    <span class="n">cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the fraction of sunlit leaves at a given depth inside the canopy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [-] fraction of sunlit leaves at a given depth inside the canopy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">direct_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">cumulative_leaf_area_index</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_shaded_fraction">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_shaded_fraction">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_shaded_fraction</span><span class="p">(</span>
+    <span class="n">cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the fraction of shaded leaves at a given depth inside the canopy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [-] fraction of shaded leaves at a given depth inside the canopy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">calc_sunlit_fraction</span><span class="p">(</span>
+        <span class="n">cumulative_leaf_area_index</span><span class="p">,</span> <span class="n">direct_black_extinction_coefficient</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_direct_irradiance">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_absorbed_direct_irradiance">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_direct_irradiance</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed direct (beam) irradiance per unit leaf area (depth-independent).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2leaf] the absorbed direct (beam) irradiance per unit leaf area (depth-independent)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">incident_direct_irradiance</span>
+        <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">leaf_scattering_coefficient</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">direct_black_extinction_coefficient</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_diffuse_irradiance_at_given_depth">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_absorbed_diffuse_irradiance_at_given_depth">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_diffuse_irradiance_at_given_depth</span><span class="p">(</span>
+    <span class="n">incident_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">diffuse_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed diffuse irradiance per unit leaf area at a given depth inside the canopy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_diffuse_irradiance: [W m-2ground] incident diffuse irradiance at the top of the canopy</span>
+<span class="sd">        cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index</span>
+<span class="sd">        canopy_reflectance_to_diffuse_irradiance: [-] canopy reflectance to diffuse irradiance for the given irradiance</span>
+<span class="sd">            band</span>
+<span class="sd">        diffuse_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of diffuse irradiance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2leaf] the absorbed diffuse irradiance per unit leaf area at the given depth inside the canopy</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">incident_diffuse_irradiance</span>
+        <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">diffuse_extinction_coefficient</span>
+        <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">diffuse_extinction_coefficient</span> <span class="o">*</span> <span class="n">cumulative_leaf_area_index</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_scattered_irradiance_at_given_depth">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_absorbed_scattered_irradiance_at_given_depth">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_scattered_irradiance_at_given_depth</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed scattered irradiance per unit leaf area at a given depth inside the canopy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index</span>
+<span class="sd">        direct_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">        canopy_reflectance_to_direct_irradiance: [-] canopy reflectance to direct (beam) irradiance</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2leaf] the absorbed diffuse irradiance per unit leaf area at the given depth inside the canopy</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        This function is not used directly in crop_irradiance package. It was implemented so that it could be used by</span>
+<span class="sd">            dependent packages (see crop_energy_balance from https://github.com/RamiALBASHA/crop_energy_balance)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gain_fraction</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">direct_extinction_coefficient</span>
+        <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">direct_extinction_coefficient</span> <span class="o">*</span> <span class="n">cumulative_leaf_area_index</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">loss_fraction</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">leaf_scattering_coefficient</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">direct_black_extinction_coefficient</span>
+        <span class="o">*</span> <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">direct_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">cumulative_leaf_area_index</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">incident_direct_irradiance</span> <span class="o">*</span> <span class="p">(</span><span class="n">gain_fraction</span> <span class="o">-</span> <span class="n">loss_fraction</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_sunlit_fraction_per_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_sunlit_fraction_per_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_sunlit_fraction_per_leaf_layer</span><span class="p">(</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the fraction of sunlit leaves at a given depth inside the canopy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [-] fraction of sunlit leaves of the considered layer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">upper_fraction</span> <span class="o">=</span> <span class="n">calc_sunlit_fraction</span><span class="p">(</span>
+        <span class="n">upper_cumulative_leaf_area_index</span><span class="p">,</span> <span class="n">direct_black_extinction_coefficient</span>
+    <span class="p">)</span>
+    <span class="n">lower_fraction</span> <span class="o">=</span> <span class="n">calc_sunlit_fraction</span><span class="p">(</span>
+        <span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">,</span>
+        <span class="n">direct_black_extinction_coefficient</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">upper_fraction</span> <span class="o">-</span> <span class="n">lower_fraction</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+        <span class="n">direct_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">leaf_layer_thickness</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_direct_irradiance_by_sunlit_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_absorbed_direct_irradiance_by_sunlit_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_direct_irradiance_by_sunlit_leaf_layer</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed direct irradiance by a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed direct irradiance by a sunlit leaf layer per unit ground area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">scaling_factor</span> <span class="o">=</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">direct_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span>
+    <span class="p">)</span> <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+        <span class="o">-</span><span class="n">direct_black_extinction_coefficient</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">incident_direct_irradiance</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">leaf_scattering_coefficient</span><span class="p">)</span> <span class="o">*</span> <span class="n">scaling_factor</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_diffuse_irradiance_by_sunlit_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_absorbed_diffuse_irradiance_by_sunlit_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_diffuse_irradiance_by_sunlit_leaf_layer</span><span class="p">(</span>
+    <span class="n">incident_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">diffuse_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed diffuse irradiance by a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_diffuse_irradiance: [W m-2ground] incident diffuse irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        canopy_reflectance_to_diffuse_irradiance: [-] canopy reflectance to diffuse irradiance for the given irradiance</span>
+<span class="sd">            band</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">        diffuse_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of diffuse irradiance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed diffuse irradiance by a sunlit leaf layer per unit ground area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">diffuse_and_direct_extinction_coefficient</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">diffuse_extinction_coefficient</span> <span class="o">+</span> <span class="n">direct_black_extinction_coefficient</span>
+    <span class="p">)</span>
+
+    <span class="n">scaling_factor</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">diffuse_extinction_coefficient</span>
+        <span class="o">/</span> <span class="n">diffuse_and_direct_extinction_coefficient</span>
+        <span class="o">*</span> <span class="p">(</span>
+            <span class="n">exp</span><span class="p">(</span>
+                <span class="o">-</span><span class="n">diffuse_and_direct_extinction_coefficient</span>
+                <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span>
+            <span class="p">)</span>
+            <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+                <span class="o">-</span><span class="n">diffuse_and_direct_extinction_coefficient</span>
+                <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">incident_diffuse_irradiance</span>
+        <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">scaling_factor</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_scattered_irradiance_by_sunlit_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_absorbed_scattered_irradiance_by_sunlit_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_scattered_irradiance_by_sunlit_leaf_layer</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed scattered irradiance by a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        direct_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">        canopy_reflectance_to_direct_irradiance: [-] canopy reflectance to direct (beam) irradiance</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed scattered irradiance by a sunlit leaf layer per unit ground area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">direct_and_black_extinction_coefficient</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">direct_extinction_coefficient</span> <span class="o">+</span> <span class="n">direct_black_extinction_coefficient</span>
+    <span class="p">)</span>
+
+    <span class="n">scaling_factor_direct_and_black</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">direct_extinction_coefficient</span>
+        <span class="o">/</span> <span class="n">direct_and_black_extinction_coefficient</span>
+        <span class="o">*</span> <span class="p">(</span>
+            <span class="n">exp</span><span class="p">(</span>
+                <span class="o">-</span><span class="n">direct_and_black_extinction_coefficient</span>
+                <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span>
+            <span class="p">)</span>
+            <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+                <span class="o">-</span><span class="n">direct_and_black_extinction_coefficient</span>
+                <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">scaling_factor_direct_black</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">direct_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="mi">2</span>
+            <span class="o">*</span> <span class="n">direct_black_extinction_coefficient</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">incident_direct_irradiance</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">)</span> <span class="o">*</span> <span class="n">scaling_factor_direct_and_black</span>
+        <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">leaf_scattering_coefficient</span><span class="p">)</span> <span class="o">*</span> <span class="n">scaling_factor_direct_black</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_diffuse_irradiance_by_shaded_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_absorbed_diffuse_irradiance_by_shaded_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_diffuse_irradiance_by_shaded_leaf_layer</span><span class="p">(</span>
+    <span class="n">incident_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">diffuse_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed diffuse irradiance by a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_diffuse_irradiance: [W m-2ground] incident diffuse irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        canopy_reflectance_to_diffuse_irradiance: [-] canopy reflectance to diffuse irradiance for the given irradiance</span>
+<span class="sd">            band</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">        diffuse_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of diffuse irradiance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed diffuse irradiance by a shaded leaf layer per unit ground area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">diffuse_and_direct_extinction_coeffcient</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">diffuse_extinction_coefficient</span> <span class="o">+</span> <span class="n">direct_black_extinction_coefficient</span>
+    <span class="p">)</span>
+
+    <span class="n">scaling_factor</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">diffuse_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">diffuse_extinction_coefficient</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span> <span class="o">-</span> <span class="n">diffuse_extinction_coefficient</span> <span class="o">/</span> <span class="n">diffuse_and_direct_extinction_coeffcient</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">diffuse_and_direct_extinction_coeffcient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span>
+        <span class="p">)</span>
+        <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">diffuse_and_direct_extinction_coeffcient</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">incident_diffuse_irradiance</span>
+        <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">)</span>
+        <span class="o">*</span> <span class="n">scaling_factor</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="calc_absorbed_scattered_irradiance_by_shaded_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.calc_absorbed_scattered_irradiance_by_shaded_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">calc_absorbed_scattered_irradiance_by_shaded_leaf_layer</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed scattered irradiance by a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        direct_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">        canopy_reflectance_to_direct_irradiance: [-] canopy reflectance to direct (beam) irradiance</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed scattered irradiance by a sunlit leaf layer per unit ground area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">direct_and_black_extinction_coefficient</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">direct_extinction_coefficient</span> <span class="o">+</span> <span class="n">direct_black_extinction_coefficient</span>
+    <span class="p">)</span>
+
+    <span class="n">scaling_factor_direct_and_black</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">direct_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">direct_extinction_coefficient</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span> <span class="o">-</span> <span class="n">direct_extinction_coefficient</span> <span class="o">/</span> <span class="n">direct_and_black_extinction_coefficient</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">direct_and_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">direct_and_black_extinction_coefficient</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">scaling_factor_direct_black</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">direct_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">direct_black_extinction_coefficient</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">direct_black_extinction_coefficient</span> <span class="o">*</span> <span class="n">upper_cumulative_leaf_area_index</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">exp</span><span class="p">(</span>
+            <span class="o">-</span><span class="mi">2</span>
+            <span class="o">*</span> <span class="n">direct_black_extinction_coefficient</span>
+            <span class="o">*</span> <span class="p">(</span><span class="n">upper_cumulative_leaf_area_index</span> <span class="o">+</span> <span class="n">leaf_layer_thickness</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">incident_direct_irradiance</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">)</span> <span class="o">*</span> <span class="n">scaling_factor_direct_and_black</span>
+        <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">leaf_scattering_coefficient</span><span class="p">)</span> <span class="o">*</span> <span class="n">scaling_factor_direct_black</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="absorbed_irradiance_by_sunlit_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.absorbed_irradiance_by_sunlit_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">absorbed_irradiance_by_sunlit_leaf_layer</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">incident_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">diffuse_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed irradiance by sunlit leaves of a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        incident_diffuse_irradiance: [W m-2ground] incident diffuse irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+<span class="sd">        canopy_reflectance_to_direct_irradiance: [-] canopy reflectance to direct (beam) irradiance</span>
+<span class="sd">        canopy_reflectance_to_diffuse_irradiance: [-] canopy reflectance to diffuse irradiance</span>
+<span class="sd">        direct_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">        diffuse_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of diffuse irradiance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed irradiance by sunlit leaves of a leaf layer per unit ground area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">absorbed_direct_irradiance</span> <span class="o">=</span> <span class="n">calc_absorbed_direct_irradiance_by_sunlit_leaf_layer</span><span class="p">(</span>
+        <span class="n">incident_direct_irradiance</span><span class="p">,</span>
+        <span class="n">upper_cumulative_leaf_area_index</span><span class="p">,</span>
+        <span class="n">leaf_layer_thickness</span><span class="p">,</span>
+        <span class="n">leaf_scattering_coefficient</span><span class="p">,</span>
+        <span class="n">direct_black_extinction_coefficient</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">absorbed_diffuse_irradiance</span> <span class="o">=</span> <span class="n">calc_absorbed_diffuse_irradiance_by_sunlit_leaf_layer</span><span class="p">(</span>
+        <span class="n">incident_diffuse_irradiance</span><span class="p">,</span>
+        <span class="n">upper_cumulative_leaf_area_index</span><span class="p">,</span>
+        <span class="n">leaf_layer_thickness</span><span class="p">,</span>
+        <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">,</span>
+        <span class="n">direct_black_extinction_coefficient</span><span class="p">,</span>
+        <span class="n">diffuse_extinction_coefficient</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">absorbed_scattered_irradiance</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">calc_absorbed_scattered_irradiance_by_sunlit_leaf_layer</span><span class="p">(</span>
+            <span class="n">incident_direct_irradiance</span><span class="p">,</span>
+            <span class="n">upper_cumulative_leaf_area_index</span><span class="p">,</span>
+            <span class="n">leaf_layer_thickness</span><span class="p">,</span>
+            <span class="n">direct_extinction_coefficient</span><span class="p">,</span>
+            <span class="n">direct_black_extinction_coefficient</span><span class="p">,</span>
+            <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">,</span>
+            <span class="n">leaf_scattering_coefficient</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">absorbed_direct_irradiance</span>
+        <span class="o">+</span> <span class="n">absorbed_diffuse_irradiance</span>
+        <span class="o">+</span> <span class="n">absorbed_scattered_irradiance</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="absorbed_irradiance_by_shaded_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.absorbed_irradiance_by_shaded_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">absorbed_irradiance_by_shaded_leaf_layer</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">incident_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">diffuse_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed irradiance by shaded leaves of a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        incident_diffuse_irradiance: [W m-2ground] incident diffuse irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+<span class="sd">        canopy_reflectance_to_direct_irradiance: [-] canopy reflectance to direct (beam) irradiance</span>
+<span class="sd">        canopy_reflectance_to_diffuse_irradiance: [-] canopy reflectance to diffuse irradiance</span>
+<span class="sd">        direct_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">        diffuse_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of diffuse irradiance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed irradiance by shaded leaves of a leaf layer per unit ground area</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">absorbed_diffuse_irradiance</span> <span class="o">=</span> <span class="n">calc_absorbed_diffuse_irradiance_by_shaded_leaf_layer</span><span class="p">(</span>
+        <span class="n">incident_diffuse_irradiance</span><span class="p">,</span>
+        <span class="n">upper_cumulative_leaf_area_index</span><span class="p">,</span>
+        <span class="n">leaf_layer_thickness</span><span class="p">,</span>
+        <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">,</span>
+        <span class="n">direct_black_extinction_coefficient</span><span class="p">,</span>
+        <span class="n">diffuse_extinction_coefficient</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">absorbed_scattered_irradiance</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">calc_absorbed_scattered_irradiance_by_shaded_leaf_layer</span><span class="p">(</span>
+            <span class="n">incident_direct_irradiance</span><span class="p">,</span>
+            <span class="n">upper_cumulative_leaf_area_index</span><span class="p">,</span>
+            <span class="n">leaf_layer_thickness</span><span class="p">,</span>
+            <span class="n">direct_extinction_coefficient</span><span class="p">,</span>
+            <span class="n">direct_black_extinction_coefficient</span><span class="p">,</span>
+            <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">,</span>
+            <span class="n">leaf_scattering_coefficient</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">absorbed_diffuse_irradiance</span> <span class="o">+</span> <span class="n">absorbed_scattered_irradiance</span></div>
+
+
+
+<div class="viewcode-block" id="absorbed_irradiance_by_sunlit_and_shaded_leaves_per_leaf_layer">
+<a class="viewcode-back" href="../../../../crop_irradiance.uniform_crops.formalisms.html#crop_irradiance.uniform_crops.formalisms.sunlit_shaded_leaves.absorbed_irradiance_by_sunlit_and_shaded_leaves_per_leaf_layer">[docs]</a>
+<span class="k">def</span> <span class="nf">absorbed_irradiance_by_sunlit_and_shaded_leaves_per_leaf_layer</span><span class="p">(</span>
+    <span class="n">incident_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">incident_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">upper_cumulative_leaf_area_index</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_layer_thickness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">leaf_scattering_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_direct_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">canopy_reflectance_to_diffuse_irradiance</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">direct_black_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">diffuse_extinction_coefficient</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates the absorbed irradiance by sunlit and shaded leaves of a leaf layer per unit ground area.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        incident_direct_irradiance: [W m-2ground] incident direct (beam) irradiance at the top of the canopy</span>
+<span class="sd">        incident_diffuse_irradiance: [W m-2ground] incident diffuse irradiance at the top of the canopy</span>
+<span class="sd">        upper_cumulative_leaf_area_index: [m2leaf m-2ground] cumulative downwards leaf area index at the top of the</span>
+<span class="sd">            considered layer</span>
+<span class="sd">        leaf_layer_thickness: [m2leaf m-2ground] leaf area index of the considered layer</span>
+<span class="sd">        leaf_scattering_coefficient: [-] leaf scattering coefficient</span>
+<span class="sd">        canopy_reflectance_to_direct_irradiance: [-] canopy reflectance to direct (beam) irradiance</span>
+<span class="sd">        canopy_reflectance_to_diffuse_irradiance: [-] canopy reflectance to diffuse irradiance</span>
+<span class="sd">        direct_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam) irradiance</span>
+<span class="sd">        direct_black_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of direct (beam)</span>
+<span class="sd">            irradiance for black leaves</span>
+<span class="sd">        diffuse_extinction_coefficient: [m2ground m-2leaf] the extinction coefficient of diffuse irradiance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [W m-2ground] the absorbed irradiance by sunlit and shaded leaves of a leaf layer per unit ground area, where</span>
+<span class="sd">            leaves categories (&#39;sunlit&#39;, &#39;shaded&#39;) are returned as dictionary keys</span>
+
+<span class="sd">    References:</span>
+<span class="sd">        Goudriaan J. (1988)</span>
+<span class="sd">            The bare bones of leaf-angle distribution in radiation models for canopy photosynthesis and energy exchange.</span>
+<span class="sd">            Agricultural and Forest Meteorology 43, 155 - 169.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;sunlit&quot;</span><span class="p">:</span> <span class="n">absorbed_irradiance_by_sunlit_leaf_layer</span><span class="p">(</span><span class="o">**</span><span class="nb">locals</span><span class="p">()),</span>
+        <span class="s2">&quot;shaded&quot;</span><span class="p">:</span> <span class="n">absorbed_irradiance_by_shaded_leaf_layer</span><span class="p">(</span><span class="o">**</span><span class="nb">locals</span><span class="p">()),</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Rami Albasha.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
