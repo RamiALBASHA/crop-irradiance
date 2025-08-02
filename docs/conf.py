@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "crop_irradiance"
-copyright = "2020, Rami Albasha"
+copyright = "2025, Rami Albasha"
 author = "Rami Albasha"
 
 # The full version, including alpha/beta/rc tags
