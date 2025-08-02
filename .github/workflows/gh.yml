@@ -15,6 +15,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r docs/requirements.txt
           pip install ghp-import
+      - name: generate API docs
+        run: sphinx-apidoc -o docs/ src/crop_irradiance
       - name: make html
         working-directory: docs
         run: make html
